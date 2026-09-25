@@ -4,6 +4,8 @@
 **Actividad:** T1S4 — Proyecto API REST inicial y front-end consumidor  
 **Estudiante:** Fernando Bermello  
 **Fecha:** Septiembre 2026  
+**Repositorio GitHub:** [https://github.com/FergoodNES/T1S4--Proyecto--API-REST-inicial-y-front-end-consumidor-para-gesti-n-de-incidentes](https://github.com/FergoodNES/T1S4--Proyecto--API-REST-inicial-y-front-end-consumidor-para-gesti-n-de-incidentes)  
+**Despliegue en Producción (Render):** [https://t1s4-proyecto-api-rest-inicial-y-front.onrender.com/](https://t1s4-proyecto-api-rest-inicial-y-front.onrender.com/)  
 
 ---
 

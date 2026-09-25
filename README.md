@@ -5,6 +5,12 @@
 **Estudiante:** Fernando Bermello  
 **Fecha:** Septiembre 2026  
 
+[![Live Demo](https://img.shields.io/badge/Render-Live%20Demo-brightgreen?logo=render)](https://t1s4-proyecto-api-rest-inicial-y-front.onrender.com/)
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-blue?logo=github)](https://github.com/FergoodNES/T1S4--Proyecto--API-REST-inicial-y-front-end-consumidor-para-gesti-n-de-incidentes)
+
+- 🌐 **Demo en Vivo en Internet:** [https://t1s4-proyecto-api-rest-inicial-y-front.onrender.com/](https://t1s4-proyecto-api-rest-inicial-y-front.onrender.com/)
+- 🐙 **Repositorio GitHub:** [https://github.com/FergoodNES/T1S4--Proyecto--API-REST-inicial-y-front-end-consumidor-para-gesti-n-de-incidentes](https://github.com/FergoodNES/T1S4--Proyecto--API-REST-inicial-y-front-end-consumidor-para-gesti-n-de-incidentes)
+
 ---
 
 ## 📋 Descripción del Proyecto
