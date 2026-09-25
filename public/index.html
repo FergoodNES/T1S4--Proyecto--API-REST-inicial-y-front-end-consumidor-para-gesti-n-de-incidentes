@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sistema de Gestión de Incidentes para Plataformas de Red y Telecomunicaciones con Express y consumo vía Fetch API.">
+  <title>NetOps Incident Hub | Gestión de Incidentes de Plataforma</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Header de navegación superior -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand-group">
+        <div class="brand-logo">
+          <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">NetOps IncidentHub</h1>
+          <span class="brand-subtitle">Plataforma de Redes & Telecomunicaciones • T1S4</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <div class="api-status-pill" id="apiStatusPill" title="Estado de conexión con el backend Express">
+          <span class="status-dot pulsing"></span>
+          <span id="apiStatusText">Conectando...</span>
+          <span class="latency-badge" id="apiLatencyBadge">-- ms</span>
+        </div>
+
+        <button class="btn btn-secondary" id="btnRefresh" title="Sincronizar incidentes con la API">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          <span>Sincronizar</span>
+        </button>
+
+        <button class="btn btn-primary" id="btnOpenCreateModal">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Nuevo Incidente</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-container">
+    <!-- Métricas en vivo (KPI Cards) -->
+    <section class="kpi-grid" aria-label="Métricas de incidentes">
+      <div class="kpi-card" data-metric="total">
+        <div class="kpi-header">
+          <span class="kpi-label">Total Registrados</span>
+          <div class="kpi-icon icon-blue">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpiTotal">0</div>
+        <span class="kpi-caption">Incidentes en memoria</span>
+      </div>
+
+      <div class="kpi-card" data-metric="abiertos">
+        <div class="kpi-header">
+          <span class="kpi-label">Abiertos</span>
+          <div class="kpi-icon icon-red">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+        </div>
+        <div class="kpi-value text-red" id="kpiAbiertos">0</div>
+        <span class="kpi-caption">Requieren atención</span>
+      </div>
+
+      <div class="kpi-card" data-metric="en-progreso">
+        <div class="kpi-header">
+          <span class="kpi-label">En Progreso</span>
+          <div class="kpi-icon icon-amber">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+        </div>
+        <div class="kpi-value text-amber" id="kpiEnProgreso">0</div>
+        <span class="kpi-caption">En diagnóstico / NOC</span>
+      </div>
+
+      <div class="kpi-card" data-metric="resueltos">
+        <div class="kpi-header">
+          <span class="kpi-label">Resueltos</span>
+          <div class="kpi-icon icon-emerald">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+        </div>
+        <div class="kpi-value text-emerald" id="kpiResueltos">0</div>
+        <span class="kpi-caption">Solución confirmada</span>
+      </div>
+
+      <div class="kpi-card" data-metric="criticos">
+        <div class="kpi-header">
+          <span class="kpi-label">Severidad Crítica</span>
+          <div class="kpi-icon icon-purple">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+              <polygon points="12 2 2 22 22 22 12 2"></polygon>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </div>
+        </div>
+        <div class="kpi-value text-purple" id="kpiCriticos">0</div>
+        <span class="kpi-caption">Impacto mayor en red</span>
+      </div>
+    </section>
+
+    <!-- Barra de Búsqueda y Filtros Dinámicos -->
+    <section class="controls-panel">
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="searchInput" placeholder="Buscar por título, descripción, responsable o ID..." autocomplete="off">
+        <button class="clear-search-btn" id="btnClearSearch" title="Borrar búsqueda" style="display: none;">&times;</button>
+      </div>
+
+      <div class="filters-group">
+        <div class="filter-item">
+          <label for="filterEstado">Estado:</label>
+          <select id="filterEstado" class="form-select">
+            <option value="Todos">Todos los Estados</option>
+            <option value="Abierto">Abierto</option>
+            <option value="En Progreso">En Progreso</option>
+            <option value="Resuelto">Resuelto</option>
+            <option value="Cerrado">Cerrado</option>
+          </select>
+        </div>
+
+        <div class="filter-item">
+          <label for="filterSeveridad">Severidad:</label>
+          <select id="filterSeveridad" class="form-select">
+            <option value="Todas">Todas las Severidades</option>
+            <option value="Crítica">Crítica</option>
+            <option value="Alta">Alta</option>
+            <option value="Media">Media</option>
+            <option value="Baja">Baja</option>
+          </select>
+        </div>
+
+        <div class="filter-item">
+          <label for="filterCategoria">Categoría:</label>
+          <select id="filterCategoria" class="form-select">
+            <option value="Todas">Todas las Categorías</option>
+            <option value="Red Troncal">Red Troncal</option>
+            <option value="Seguridad">Seguridad</option>
+            <option value="Hardware">Hardware</option>
+            <option value="VPN / Enlaces">VPN / Enlaces</option>
+            <option value="Servicios de Datos">Servicios de Datos</option>
+          </select>
+        </div>
+
+        <button class="btn btn-outline" id="btnResetFilters" title="Restablecer todos los filtros">
+          <span>Limpiar</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Lista de Incidentes y Consola de Actividad Fetch -->
+    <div class="content-layout">
+      <!-- Sección principal de incidentes -->
+      <section class="incidents-container">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Incidentes de Red</h2>
+            <p class="section-subtitle">Visualización en tiempo real gestionada mediante peticiones Fetch REST</p>
+          </div>
+          <div class="results-counter">
+            Mostrando <strong id="shownCount">0</strong> de <strong id="totalCount">0</strong> incidentes
+          </div>
+        </div>
+
+        <!-- Contenedor dinámico de tarjetas de incidentes -->
+        <div class="incidents-grid" id="incidentsGrid">
+          <!-- Inyectado por JavaScript -->
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Cargando incidentes desde la API REST...</p>
+          </div>
+        </div>
+
+        <!-- Estado vacío si no hay coincidencias -->
+        <div class="empty-state" id="emptyState" style="display: none;">
+          <div class="empty-icon">🔍</div>
+          <h3>No se encontraron incidentes</h3>
+          <p>No existen incidentes que coincidan con los criterios de búsqueda o filtros seleccionados.</p>
+          <button class="btn btn-secondary" id="btnEmptyReset">Limpiar filtros de búsqueda</button>
+        </div>
+      </section>
+
+      <!-- Panel lateral de Consola de Peticiones Fetch (Demostración API) -->
+      <aside class="api-console-panel">
+        <div class="console-header">
+          <div class="console-title-group">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
+            <span class="console-title">Inspector de Tráfico Fetch REST</span>
+          </div>
+          <button class="btn-icon" id="btnClearLogs" title="Limpiar registros de consola">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="console-body" id="consoleBody">
+          <div class="console-entry info">
+            <span class="entry-time">[00:00:00]</span>
+            <span class="entry-tag">SISTEMA</span>
+            <span class="entry-msg">Listo para registrar operaciones HTTP Fetch (GET, POST, PUT, DELETE)...</span>
+          </div>
+        </div>
+
+        <div class="console-footer">
+          <span>Backend: <strong id="consoleServerUrl">http://localhost:3000</strong></span>
+          <span class="api-badge-tag">JSON / RESTful</span>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- Modal para Crear / Editar Incidente -->
+  <div class="modal-backdrop" id="incidentModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title" id="modalTitle">Nuevo Incidente de Plataforma</h3>
+          <p class="modal-subtitle">Ingrese los datos para despachar el incidente a través de la API REST</p>
+        </div>
+        <button class="modal-close-btn" id="btnCloseModal" title="Cerrar">&times;</button>
+      </div>
+
+      <form id="incidentForm" novalidate>
+        <input type="hidden" id="incidentId" value="">
+
+        <div class="form-group">
+          <label for="formTitulo" class="form-label">Título del Incidente <span class="required">*</span></label>
+          <input type="text" id="formTitulo" class="form-control" placeholder="Ej: Caída de enlace fibra óptica primaria..." required minlength="5">
+          <small class="form-error" id="errorTitulo"></small>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label for="formCategoria" class="form-label">Categoría <span class="required">*</span></label>
+            <select id="formCategoria" class="form-control" required>
+              <option value="Red Troncal">Red Troncal</option>
+              <option value="Seguridad">Seguridad</option>
+              <option value="Hardware">Hardware</option>
+              <option value="VPN / Enlaces">VPN / Enlaces</option>
+              <option value="Servicios de Datos">Servicios de Datos</option>
+            </select>
+          </div>
+
+          <div class="form-group col-6">
+            <label for="formSeveridad" class="form-label">Severidad <span class="required">*</span></label>
+            <select id="formSeveridad" class="form-control" required>
+              <option value="Baja">Baja</option>
+              <option value="Media" selected>Media</option>
+              <option value="Alta">Alta</option>
+              <option value="Crítica">Crítica</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label for="formEstado" class="form-label">Estado <span class="required">*</span></label>
+            <select id="formEstado" class="form-control" required>
+              <option value="Abierto" selected>Abierto</option>
+              <option value="En Progreso">En Progreso</option>
+              <option value="Resuelto">Resuelto</option>
+              <option value="Cerrado">Cerrado</option>
+            </select>
+          </div>
+
+          <div class="form-group col-6">
+            <label for="formAsignado" class="form-label">Técnico / Responsable</label>
+            <input type="text" id="formAsignado" class="form-control" placeholder="Ej: Ing. Carlos Mendoza (NOC)">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="formDescripcion" class="form-label">Descripción Técnica del Problema <span class="required">*</span></label>
+          <textarea id="formDescripcion" class="form-control textarea" rows="4" placeholder="Detalle los síntomas, interfaces involucradas, diagnósticos iniciales y afectación..." required minlength="10"></textarea>
+          <small class="form-error" id="errorDescripcion"></small>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" id="btnCancelModal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btnSaveIncident">
+            <span class="btn-spinner" id="btnSpinner" style="display: none;"></span>
+            <span id="btnSaveText">Guardar Incidente</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal de Detalle con visualizador JSON crudo de la API -->
+  <div class="modal-backdrop" id="detailModal">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div>
+          <div class="badge-row" id="detailBadges"></div>
+          <h3 class="modal-title" id="detailTitle">Detalle de Incidente</h3>
+          <p class="modal-subtitle" id="detailSubtitle"></p>
+        </div>
+        <button class="modal-close-btn" id="btnCloseDetailModal">&times;</button>
+      </div>
+
+      <div class="detail-body">
+        <div class="detail-section">
+          <h4>Descripción Técnica</h4>
+          <p id="detailDescription" class="detail-text"></p>
+        </div>
+
+        <div class="detail-meta-grid">
+          <div class="meta-item">
+            <span class="meta-label">ID de Registro</span>
+            <span class="meta-val" id="detailId">#</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Responsable Asignado</span>
+            <span class="meta-val" id="detailAssignee">-</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Fecha de Reporte</span>
+            <span class="meta-val" id="detailCreatedAt">-</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Última Actualización</span>
+            <span class="meta-val" id="detailUpdatedAt">-</span>
+          </div>
+        </div>
+
+        <!-- Pestaña para ver la carga útil JSON devuelta por la API -->
+        <div class="raw-json-container">
+          <div class="raw-json-header">
+            <span>Respuesta JSON cruda de la API REST (GET /api/incidentes/:id)</span>
+            <button class="btn-copy" id="btnCopyJson">Copiar JSON</button>
+          </div>
+          <pre><code id="detailRawJson">// JSON payload</code></pre>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" id="btnEditFromDetail">Editar</button>
+        <button type="button" class="btn btn-outline" id="btnCloseDetailBtn">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenedor flotante de Notificaciones Toast -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <!-- Footer institucional -->
+  <footer class="app-footer">
+    <p>Proyecto T1S4: API REST en Express y Front-End Consumidor • Redes de Plataforma • Universidad</p>
+    <p class="footer-sub">Desarrollado con arquitectura MVC en memoria, middleware de registro y consumo con Fetch API.</p>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
